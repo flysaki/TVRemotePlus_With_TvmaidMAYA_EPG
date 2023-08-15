@@ -32,5 +32,5 @@
 リリース版導入、チャンネル取得、視聴動作確認をした上で
 1. 繰り返しますが、バックアップを取りましょう
 2. TVRemotePlusを起動
-3. [ソース差分](https://github.com/flysaki/TVRemotePlus_With_TvmaidMAYA_EPG/commit/97a0d0f79465612b3fe4dc7a8cd67e08b7f6da96)を確認し、自分のマシーン上のソースを改造
+3. [ソース差分](https://github.com/flysaki/TVRemotePlus_With_TvmaidMAYA_EPG/commit/ff8610569a631c3b8a32622df7d04c18ffe23784)を確認し、自分のマシーン上のソースを改造
 4. ブラウザ再読込（F5）を行い動作確認
