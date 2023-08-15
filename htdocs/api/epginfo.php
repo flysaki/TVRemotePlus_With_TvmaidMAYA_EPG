@@ -7,6 +7,7 @@
 	require_once ('classloader.php');
 	require_once ('require.php');
 	require_once ('module.php');
+	require_once ('epginfo_tvmaid_maya.php');
 
 	// BonDriverとチャンネルを取得
 	list($BonDriver_dll, $BonDriver_dll_T, $BonDriver_dll_S, // BonDriver
@@ -52,33 +53,45 @@
 
 		// -----------------------------------
 
-		if (!empty($EDCB_http_url)){
+		// チャンネル名
+		$channel_name = $ch[$chnum];
 
-			// 番組表 API
-			@$epg = simplexml_load_file($EDCB_http_url.'api/EnumEventInfo?onair=&onid='.$onid.'&sid='.$sid.'&tsid='.$tsid);
+		// 番組情報の取得
+		$pgFound = (function() use($channel_name) {
+			$epg = MayaEpg::getEpgData();
+			$pgFoundArr = array_filter($epg, function ($pg) use ($channel_name) {
+				return $pg['name'] === $channel_name;
+			});
 
-			// チャンネル名
-			if (isset($epg->items->eventinfo[0]->service_name)){
-				$channel = mb_convert_kana(strval($epg->items->eventinfo[0]->service_name), 'asv');
-			} else {
-				$channel = 'チャンネル名を取得できませんでした';
+			if(!count($pgFoundArr)){
+				return null;
 			}
+
+			return current($pgFoundArr);
+		})();
+
+
+		if ($pgFound){
+//print_r($pgFound);
+			$epg = null;
+			// チャンネル名
+			$channel = $channel_name;
+			$program_name = $pgFound['title'] ?: '';
+
+
+			// 開始/終了時間の解析
+			$starttimestamp = MayaEpg::getTimeFromMayaTime($pgFound['start']); //タイムスタンプに変換
+			$duration = $pgFound['duration'];
+			$endtimestamp = MayaEpg::getTimeFromMayaTime($pgFound['end']); // 秒数を足す
+			// 表示用
+			$starttime = date("H:i", $starttimestamp);
+			$endtime = date("H:i", $endtimestamp);
 
 			// 現在の番組
-			if (isset($epg->items->eventinfo[0]->startTime)){
-				$starttime = $epg->items->eventinfo[0]->startDate.' '.$epg->items->eventinfo[0]->startTime;
-			} else {
-				$starttime = date('Y/m/d').'00:00:00';
-			}
-			if (isset($epg->items->eventinfo[0]->duration)){
-				$duration = $epg->items->eventinfo[0]->duration;
-			} else {
-				$duration = '0000';
-			}
-			if (isset($epg->items->eventinfo[0]->event_name)){
+			if ($program_name){
 				//文字列に変換してさらに半角に変換して改行をbrにする
-				$program_name = str_replace("\n", "<br>\n", mb_convert_kana(strval($epg->items->eventinfo[0]->event_name), 'asv'));
-			} else {
+				$program_name = str_replace("\n", "<br>\n", mb_convert_kana(strval($program_name), 'asv'));
+			} else {	// TODO: 放送休止対応、次の番組対応 (23/08/15)
 				if (isset($epg->items->eventinfo[0]->service_name)){
 					$program_name = '放送休止';
 				} else {
@@ -127,12 +140,6 @@
 					$next_program_info = '番組情報を取得できませんでした';
 				}
 			}
-
-			// 開始/終了時間の解析
-			$starttimestamp = strtotime($starttime); //タイムスタンプに変換
-			$endtimestamp = $starttimestamp + $duration; // 秒数を足す
-			$starttime = date("H:i", $starttimestamp);
-			$endtime = date("H:i", $endtimestamp);
 
 			// 次の番組の開始/終了時間の解析
 			$next_starttimestamp = strtotime($next_starttime); //タイムスタンプに変換
